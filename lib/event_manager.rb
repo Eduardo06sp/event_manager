@@ -23,6 +23,19 @@ def legislators_by_zipcode(zip_code)
   end
 end
 
+def clean_phone_number(phone_number)
+  phone_number = phone_number.delete '^0-9'
+  length = phone_number.length
+
+  if length == 10
+    phone_number
+  elsif length == 11 && phone_number[0] == '1'
+    phone_number[1..10]
+  else
+    ''
+  end
+end
+
 def save_thank_you_letter(id, form_letter)
   Dir.mkdir('output') unless Dir.exist?('output')
 
@@ -53,6 +66,8 @@ contents.each do |row|
   legislators = legislators_by_zipcode(zip_code)
 
   form_letter = erb_template.result(binding)
+
+  phone_number = clean_phone_number(row[:homephone])
 
   save_thank_you_letter(id, form_letter)
 end
