@@ -3,6 +3,7 @@
 require 'csv'
 require 'google/apis/civicinfo_v2'
 require 'erb'
+require 'time'
 
 def clean_zip_code(zip_code)
   zip_code.to_s.rjust(5, '0')[0..4]
@@ -56,6 +57,24 @@ contents = CSV.open(
 
 template_letter = File.read('form_letter.erb')
 erb_template = ERB.new template_letter
+registration_hours = []
+
+def peak_hours(hours)
+  # Create a hash that contain the instances for hours registered
+  registration_hours = hours.each_with_object(Hash.new(0)) do |hour, accumulator|
+    accumulator[hour.to_s.to_sym] += 1
+    accumulator
+  end
+
+  max_occurrences = registration_hours.max_by { |_num, instances| instances }
+
+  # Save only the times that ocurred most
+  peak_hours = registration_hours.select { |_num, instances| instances == max_occurrences[1] }
+  # Then convert them to the format 00:00
+  peak_hours = peak_hours.map { |num, _instances| "#{num}:00" }
+
+  "Peak hours are: #{peak_hours.join(' ')}"
+end
 
 contents.each do |row|
   id = row[0]
@@ -69,5 +88,9 @@ contents.each do |row|
 
   phone_number = clean_phone_number(row[:homephone])
 
+  registration_hours.push(Time.strptime(row[:regdate], '%m/%d/%y %k:%M').hour)
+
   save_thank_you_letter(id, form_letter)
 end
+
+puts peak_hours(registration_hours)
