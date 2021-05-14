@@ -58,6 +58,7 @@ contents = CSV.open(
 template_letter = File.read('form_letter.erb')
 erb_template = ERB.new template_letter
 registration_hours = []
+registration_wdays = []
 
 def peak_hours(hours)
   # Create a hash that contain the instances for hours registered
@@ -76,6 +77,20 @@ def peak_hours(hours)
   "Peak hours are: #{peak_hours.join(' ')}"
 end
 
+def peak_days(days)
+  registration_days = days.each_with_object(Hash.new(0)) do |day, accumulator|
+    accumulator[day] += 1
+    accumulator
+  end
+
+  max_occurrences = registration_days.max_by { |_day, instances| instances }
+
+  peak_days = registration_days.select { |_day, instances| instances == max_occurrences[1] }
+  peak_days = peak_days.map { |day, _instances| day }
+
+  "Peak days are: #{peak_days.join(' ')}"
+end
+
 contents.each do |row|
   id = row[0]
   name = row[:first_name]
@@ -90,7 +105,10 @@ contents.each do |row|
 
   registration_hours.push(Time.strptime(row[:regdate], '%m/%d/%y %k:%M').hour)
 
+  registration_wdays.push(Date.strptime(row[:regdate], '%m/%d/%y %k:%M').strftime('%A'))
+
   save_thank_you_letter(id, form_letter)
 end
 
 puts peak_hours(registration_hours)
+puts peak_days(registration_wdays)
